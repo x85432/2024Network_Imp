@@ -1,0 +1,26 @@
+
+Switch:
+    - add:
+      - 讓所有在setting已連結的hosts，都給於一個port，
+        並且將他們的VLAN都設為"Native"
+      - 如果是連結到switch的話，那就將這個port設為trunck port
+    - trunck port:
+      - 在send()的時候先判斷有沒有VID這一項
+      - 如果有就必須untag最後一個VID (list.pop)
+      - 如果沒有則為Native
+      - 判斷: 
+        - 先查找封包的 dst mac 與這個switch所對應的outport後，再看此port是否與封包的VLAN相同
+          相同才可forward，不同則丟掉並且輸出 "Different VLAN" 的訊息
+        - 若相同即為原本的send
+    - flood:
+      - flood 是對於 inport 之外的所有port都傳送封包，但在send的時候會判斷vlan，所以應該要只flood到vlan
+
+多個vlan?:
+  - 有分層的時候就必須多個VLAN
+
+vlan在一個系統中的vlan number是統一的，每個switch會統一，所以在創建的時候也要注意
+
+- 可以注意到host收到的地方都不會顯示VLAN ID
+
+
+- 只有server switch可以更新VLAN

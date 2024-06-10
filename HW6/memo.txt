@@ -1,0 +1,45 @@
+sudo mn --custom ./topo.py --topo mytopo --test pingall
+
+sudo mn --custom ./topo1.py --topo=mytopo --controller=remote,ip=127.0.0.1
+
+
+
+# Default table (table 0): forward all packets to filter_table1 (table 1)
+        match = parser.OFPMatch()
+        instructions = [parser.OFPInstructionGotoTable(1)]
+        self.add_flow(datapath, 0,  match, instructions, table_id=0)
+
+        # Filter table 1: ICMP -> filter_table2 (table 2) / other -> forward_table (table 3)
+        match  = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ip_proto=1) # ICMP
+        instructions = [parser.OFPInstructionGotoTable(2)]
+        self.add_flow(datapath, 99, match, instructions, table_id=1)
+
+        match  = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ip_proto=6) # TCP
+        instructions = [parser.OFPInstructionGotoTable(3)]
+        self.add_flow(datapath, 99, match, instructions, table_id=1)
+
+        # Filter table 2: from port 3 or port 4 -> drop
+        match  = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, in_port=3) # in_port 3 or 4
+        instructions = [] # no instructions means drop
+        self.add_flow(datapath, 99, match, instructions, table_id=2)
+
+        match  = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, in_port=4) # in_port 3 or 4
+        instructions = [] # no instructions means drop
+        self.add_flow(datapath, 99, match, instructions, table_id=2)
+
+                         # other -> forward_table (table 3)
+        match  = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, in_port=1) # go to forward_table
+        instructions = [parser.OFPInstructionGotoTable(3)]
+        self.add_flow(datapath, 99, match, instructions, table_id=2)
+
+        match  = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, in_port=2) # go to forward_table
+        instructions = [parser.OFPInstructionGotoTable(3)]
+        self.add_flow(datapath, 99, match, instructions, table_id=2)                
+
+        # Forward table 3: forward packets to the correct port
+        match = parser.OFPMatch()
+        actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
+                                          ofproto.OFPCML_NO_BUFFER)]
+        instructions = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
+                                                     actions)] # 將action封裝成instruction
+        self.add_flow(datapath, 200, match, instructions, table_id=3)

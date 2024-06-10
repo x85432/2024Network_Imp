@@ -1,0 +1,3 @@
+http_1_0_client.py.post 的 body 要 encode嗎?
+
+http_1_1_client.py:93   connection['socket'] 是做啥的?

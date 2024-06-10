@@ -1,0 +1,94 @@
+應該要把一些 慣例 記下來
+
+makeLSU的時候 updatedlist 的 elements 為 str
+
+forward的時候該怎麼處理 dst id 跟 src id, 
+ok msg 要換位置嗎?
+還是如果是forward要另外做，就直接去forward就好 把send跟forward分開?
+
+
+- 如何處理forward?
+    有routing table(forwarding table), 我知道next hop要往哪走，
+    但在一開始發送的時候，必須要加上dst id跟src id
+
+    我們應該重新思考 send_msg怎麼運作
+
+- send_msg怎麼運作
+
+    前提: 要先知道dstID是否在routing table裡面，如果沒有代表訊息未到達或是根本不在可到達的地方
+        處理方式: 等1秒，再查一次，如果沒有就直接丟掉。
+    已知routing_table有三種可能的nextHop
+    1. None (代表tar = 自己) 這個就不用送了
+    2. selfID (代表tar = neighbor)
+        srcID = 自己
+        dstID = 原本傳入的dstID
+    3. neighborID (代表tar 不在自己neighbor table中)
+        不用加上srcID跟dstID，直接查表routing_table，看要往哪裡丟封包，msg原封不動送給nextHop
+
+
+- 有幾種封包情況?
+    1. 從CLI
+    2. 從sendLSU
+    3. 從sendDBD
+    4. 從forwardPKT   - 只有這邊不會是第一包，其他都是
+    5. 從rmlink
+    6. 從regularSend
+    7. 從compareDBD
+
+- memo
+    dijkstra放好
+    先做完setlink
+    記得改classicPKT
+
+- rmlink
+    rmlink可以等到router自己殺掉嗎?
+
+- 不必要的showtable
+
+- dijk的graph由LSDB的link構建，rmlink要刪乾淨
+
+- makeLSU 是從 自己的LSDB中提取資料
+    - 所以重新算好的cost要放入LSDB
+    - setlink, dijkstra
+
+- 收到LSU
+    LSU是別人自己有更新過後的資料
+    有多個LSAs = [ID,seq,(link),(time)]
+
+- neighbor不能更新
+
+- 如何得到正確的拓譜?
+    LSDB 不能更新，會破壞拓樸，只有setlink跟接收LSU時才可以改變。
+    真正的傳送時是交給routing table去判斷
+
+- send 在比較要排除自己
+
+- 提醒自己要bidirection
+
+
+- send都不用傳了(文字訊息)
+
+- 在FULL收到hello yes=> sendDBD 給 fromID
+
+- nextHop 要追回nei才行 (in dijkstra)
+
+- doIn clear_ospf
+    - send_msg: 加入neighborState
+    - dijk:     加入float('inf')
+
+- 問助教
+    - state建立跟傳送訊息要分開做嗎?
+    
+
+
+- R1: makeLSU
+  File "./ospf.py", line 368, in recv_msg
+    processData(pkt, fromID)
+  File "./ospf.py", line 305, in processData
+    sendLSU(LSApart, fromID)
+  File "./ospf.py", line 169, in sendLSU
+    LSUpkt = makeLSU(LSApart)
+  File "./ospf.py", line 140, in makeLSU
+    seq = LSDB[int(theID)]["seq"]
+
+    可能是error request
